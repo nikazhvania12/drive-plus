@@ -7,8 +7,9 @@ import './tripModal.css';
 import GetVehicles from '../../../API/GetVehicles';
 import GetStates from '../../../API/GetStates';
 import AddTripApi from '../../../API/AddTrip';
+import EditTripApi from '../../../API/EditTrip';
 
-function TripModalConfigure({show, setShow, trip}) {
+function TripModalConfigure({show, setShow, trip, setTrips}) {
     const [states, setStates] = useState([{
         value: null,
         label: null
@@ -18,34 +19,42 @@ function TripModalConfigure({show, setShow, trip}) {
         label: null
     }]);
     useEffect(() => {
-            async function Vehicles() {
-                const vehiclesResponse = await GetVehicles();
-                const formattedVehicles = vehiclesResponse.map(vehicle => ({
-                    value: vehicle.id,
-                    label: vehicle.name
-                }));
-                setVehicles(formattedVehicles);
-            }
-            async function States() {
-                const statesResponse = await GetStates();
-                const formattedStates = statesResponse.map(state => ({
-                    value: state.id,
-                    label: state.state
-                }));
-                setStates(formattedStates);
-            }
+        async function fetchData() {
+            const [vehiclesResponse, statesResponse] = await Promise.all([GetVehicles(), GetStates()]);
+    
+            const formattedVehicles = vehiclesResponse.map(vehicle => ({
+                value: vehicle.id,
+                label: vehicle.name
+            }));
+    
+            const formattedStates = statesResponse.map(state => ({
+                value: state.id,
+                label: state.state
+            }));
+    
+            setVehicles(formattedVehicles);
+            setStates(formattedStates);
+        }
+    
+        if (show) {
+            fetchData();
+        }
+    }, [trip]);
 
-            Vehicles();
-            States();
-    }, [show, trip])
     return (
-        trip === null ? <AddTrip show={show} setShow={setShow} vehicles={vehicles} states={states} /> 
+        vehicles !== null && states !== null &&
+        (
+        trip === null ? 
+        <AddTrip show={show} setShow={setShow} vehicles={vehicles} states={states}
+        setTrips={setTrips}/> 
         : 
-        <EditTrip show={show} setShow={setShow} trip={trip} />
+        <EditTrip show={show} setShow={setShow} trip={trip} vehicles={vehicles} states={states}
+        setTrips={setTrips} />
+        )
     )
 }
 
-function AddTrip({show, setShow, vehicles, states}) {
+function AddTrip({show, setShow, vehicles, states, setTrips}) {
     const [tripToAdd, setTripToAdd] = useState({
         date: '',
         pickupStateId: 0,
@@ -57,7 +66,6 @@ function AddTrip({show, setShow, vehicles, states}) {
     });
 
     async function handleSubmit() {
-        console.log(tripToAdd);
         if(tripToAdd.date.trim() === '' ||
         tripToAdd.pickupStateId === null || tripToAdd.pickupStateId <= 0 ||
         tripToAdd.dropoffStateId === null || tripToAdd.dropoffStateId <= 0 ||
@@ -68,7 +76,10 @@ function AddTrip({show, setShow, vehicles, states}) {
         )
             return;
         
-        await AddTripApi(tripToAdd);
+        const resp = await AddTripApi(tripToAdd)
+        ;
+        setTrips(prev => [...prev, resp]);
+
         setShow(false);
     }
 
@@ -143,13 +154,87 @@ function AddTrip({show, setShow, vehicles, states}) {
     )
 }
 
-function EditTrip({show, setShow, trip}) {
-    // const tripToShow = {
-    //     date: `${trip.date.split('/')[2]}-${trip.date.split('/')[1]}-${trip.date.split('/')[0]}`,
-    //     pickup: options.find(option => option.value === trip.pickup),
-    //     dropoff: options.find(option => option.value === trip.dropoff),
-    // }
+function EditTrip({show, setShow, trip, vehicles, states, setTrips}) {
 
+    const [selectedPickup, setSelectedPickup] = useState({
+        label: 0,
+        value: ''
+    });
+
+    const [selectedDropoff, setSelectedDropoff] = useState({
+        label: 0,
+        value: ''
+    });
+
+    const [selectedVehicle, setSelectedVehicle] = useState({
+        label: 0,
+        value: ''
+    });
+
+    const [tripToEdit, setTripToEdit] = useState({
+        date: '',
+        pickupStateId: 0,
+        dropoffStateId: 0,
+        vehicleId: 0,
+        mileage: 0,
+        fuelprice: 0,
+        amount: 0
+    })
+
+    useEffect(() => {
+        setTripToEdit(x => ({
+            date: trip.date,
+            pickupStateId: trip.pickupStateId,
+            dropoffStateId: trip.dropoffStateId,
+            vehicleId: trip.vehicleId,
+            mileage: trip.mileage,
+            fuelprice: trip.fuelprice,
+            amount: trip.amount 
+        }))
+
+        setSelectedPickup(x => ({
+            label: trip.pickupStateFull,
+            value: trip.pickupStateId
+        }))
+
+        setSelectedDropoff(x => ({
+            label: trip.dropoffStateFull,
+            value: trip.dropoffStateId
+        }));
+
+        setSelectedVehicle(x => ({
+            label: trip.vehicle,
+            value: trip.vehicleId
+         }));
+
+    }, [trip])
+
+    async function handleEdit() {
+        if (
+            tripToEdit.date.trim() === '' ||
+            tripToEdit.mileage === null || tripToEdit.mileage <= 0 ||
+            tripToEdit.fuelprice === null || tripToEdit.fuelprice <= 0 ||
+            tripToEdit.amount === null || tripToEdit.amount <= 0
+        ) {
+            return;
+        }
+    
+        const updatedTrip = {
+            ...tripToEdit,
+            pickupStateId: selectedPickup.value,
+            dropoffStateId: selectedDropoff.value,
+            vehicleId: selectedVehicle.value
+        };
+    
+        const resp = await EditTripApi(updatedTrip, trip.id);
+        setTrips(prev => 
+            prev.map(t => 
+              t.id === trip.id ? resp : t
+            )
+          );
+        setShow(false);
+    }
+    
     return (
         <Modal show={show} onHide={() => setShow(false)}>
         <Modal.Header closeButton>
@@ -159,11 +244,24 @@ function EditTrip({show, setShow, trip}) {
         <div class="mb-3">
             <label for="trip-date" class="form-label">Trip Date:</label>
             <br />
-            <input type="date" class="form-control" id="trip-date" placeholder="Trip Date" />
+            <input value={tripToEdit.date} onChange={(e) => {setTripToEdit(x => ({
+                ...x, date: e.target.value
+            }))}}
+            type="date" class="form-control" id="trip-date" placeholder="Trip Deadline" />
         </div>
         <div class="mb-3">
             <label for="trip-pickup" class="form-label">Pick Up State:</label>
             <Select
+            value={selectedPickup}
+            options={states}
+            onChange={(option) => {
+                setSelectedPickup(x => ({
+                    ...x,
+                    value: option.value,
+                    label: option.label
+                }));
+            }}
+            
             placeholder="Select Pick Up State"
             isClearable
             />
@@ -171,18 +269,41 @@ function EditTrip({show, setShow, trip}) {
         <div class="mb-3">
             <label for="trip-dropoff" class="form-label">Drop Off State:</label>
             <Select
-            placeholder="Select Drop Off Up State"
+            value={selectedDropoff}
+            options={states}
+            onChange={(option) => {
+                setSelectedDropoff(x => ({
+                    ...x,
+                    value: option.value,
+                    label: option.label
+                }));
+            }}
+            
+            placeholder="Select Drop Off State"
             isClearable
             />
         </div>
         <label for="trip-mileage" class="form-label">Mileage:</label>
         <div class="mb-3 input-group">
-            <input type="number" class="form-control" value={trip.mileage} id="trip-mileage" placeholder="Mileage" />
+            <input type="number" class="form-control"
+            value={tripToEdit.mileage} onChange={(e) => {setTripToEdit(x => ({
+                ...x, mileage: e.target.value
+            }))}}
+             id="trip-mileage" placeholder="Mileage" />
             <span class="input-group-text">mi</span>
         </div>
         <div class="mb-3">
             <label for="trip-vehicle" class="form-label">Vehicle To Transport:</label>
             <Select
+            value={selectedVehicle}
+            options={vehicles}
+            onChange={(option) => {
+                setSelectedVehicle(x => ({
+                    ...x,
+                    value: option.value,
+                    label: option.label
+                }));
+            }}          
             placeholder="Select Vehicle"
             isClearable
             />
@@ -190,12 +311,18 @@ function EditTrip({show, setShow, trip}) {
         <label for="trip-price" class="form-label">Fuel Price per Gallon:</label>
         <div class="mb-3 input-group">
             <span class="input-group-text">$</span>
-            <input type="number" id="trip-price" class="form-control" placeholder="Fuel Price" />
+            <input value={tripToEdit.fuelprice} onChange={(e) => {setTripToEdit(x => ({
+                ...x, fuelprice: e.target.value
+            }))}}
+            type="number" id="trip-price" class="form-control" placeholder="Fuel Price" />
         </div>
         <label for="trip-amount" class="form-label">Amount You are Being Paid:</label>
         <div class="mb-3 input-group">
             <span class="input-group-text">$</span>
-            <input type="number" id="trip-amount" value={trip.amount}  class="form-control" placeholder="Amount" />
+            <input type="number" id="trip-amount" value={tripToEdit.amount} onChange={(e) => {setTripToEdit(x => ({
+                ...x, amount: e.target.value
+            }))}}
+            class="form-control" placeholder="Amount" />
             <span class="input-group-text">.00</span>
         </div>
         </Modal.Body>
@@ -203,7 +330,7 @@ function EditTrip({show, setShow, trip}) {
             <Button variant="success">
             Recalculate Profit
           </Button>
-          <Button variant="primary" onClick={() => setShow(false)}>
+          <Button variant="primary" onClick={() => handleEdit()}>
             Save Trip!
           </Button>
         </Modal.Footer>

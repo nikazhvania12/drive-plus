@@ -16,10 +16,10 @@ function TripModalView({show, setShow, trip}) {
                         <p>Trip Date:</p> <span>{trip.date}</span>
                     </div>
                     <div className='trip-detail'>
-                        <p>Pick Up State:</p> <span>{trip.pickup}</span>
+                        <p>Pick Up State:</p> <span>{trip.pickupStateFull}</span>
                     </div>
                     <div className='trip-detail'>
-                        <p>Drop Off State:</p> <span>{trip.dropoff}</span>
+                        <p>Drop Off State:</p> <span>{trip.dropoffStateFull}</span>
                     </div>
                     <div className='trip-detail'>
                         <p>Mileage:</p> <span>{trip.mileage}</span>
@@ -36,7 +36,7 @@ function TripModalView({show, setShow, trip}) {
                         </div>
                         <div className='profit-details-element'>
                             <h6>Fuel Cost</h6>
-                            <h7>lasha</h7>
+                            <h7>${trip.fuelprice}</h7>
                         </div>
                         <div style={{borderBottom: "0"}} className='profit-details-element'>
                             <h6>Profit</h6>
@@ -46,11 +46,11 @@ function TripModalView({show, setShow, trip}) {
                     <div className='profit-details-column' style={{borderRight: "0"}}>
                         <div className='profit-details-element'>
                             <h6>Price / Mile</h6>
-                            <h7>lasha</h7>
+                            <h7>${Math.ceil(trip.amount / trip.mileage)}</h7>
                         </div>
                         <div className='profit-details-element'>
                             <h6>Fuel / Mile</h6>
-                            <h7>lasha</h7>
+                            <h7>${Math.ceil(trip.fuelprice / trip.mileage)}</h7>
                         </div>
                         <div style={{borderBottom: "0"}} className='profit-details-element'>
                             <h6>Profit / Mile</h6>
