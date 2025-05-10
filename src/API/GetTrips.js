@@ -2,7 +2,8 @@ async function GetTrips() {
     const url = (process.env.REACT_APP_API_URL || "http://127.0.0.1:5000") + "/trips";
 
     const response = await fetch(url, {
-        method: "GET"
+        method: "GET",
+        credentials: 'include'
     })
 
     const json = await response.json();

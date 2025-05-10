@@ -1,12 +1,12 @@
-async function EditTripApi(model, id) {
-    const url = (process.env.REACT_APP_API_URL || "http://127.0.0.1:5000") + `/trips/${id}`;
+async function CalculateProfitApi(model) {
+    const url = (process.env.REACT_APP_API_URL || "http://127.0.0.1:5000") + "/trips/calculate";
 
     const response = await fetch(url, {
-        method: "PUT",
-        credentials: 'include',
+        method: "POST",
         headers: {
             'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(model)
     })
 
@@ -20,4 +20,4 @@ async function EditTripApi(model, id) {
     return json;
 }
 
-export default EditTripApi;
+export default CalculateProfitApi;

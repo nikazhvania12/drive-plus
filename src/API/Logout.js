@@ -1,13 +1,12 @@
-async function EditTripApi(model, id) {
-    const url = (process.env.REACT_APP_API_URL || "http://127.0.0.1:5000") + `/trips/${id}`;
+async function LogoutApi() {
+    const url = (process.env.REACT_APP_API_URL || "http://127.0.0.1:5000") + "/auth/logout";
 
     const response = await fetch(url, {
-        method: "PUT",
-        credentials: 'include',
+        method: "POST",
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(model)
+        credentials: 'include',
     })
 
     const json = await response.json();
@@ -20,4 +19,4 @@ async function EditTripApi(model, id) {
     return json;
 }
 
-export default EditTripApi;
+export default LogoutApi;

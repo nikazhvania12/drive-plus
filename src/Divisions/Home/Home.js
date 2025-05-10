@@ -5,14 +5,16 @@ import TripModalConfigure from '../TripModal/Configure/TripModal';
 import TripModalView from '../TripModal/View/TripModal';
 import GetTrips from '../../API/GetTrips';
 import DeleteTripApi from '../../API/DeleteTrip';
+import { useNavigate } from 'react-router';
 
 
-function Home() {
+function Home({ currentUser }) {
 
     const [showConfigureModal, setShowConfigureModal] = useState(false);
     const [showViewModal, setShowViewModal] = useState(false);
     const [trip, setTrip] = useState(null);
     const [trips, setTrips] = useState([])
+    const navigate = useNavigate();
 
     function ConfigureModaledit(e, row) {
         e.stopPropagation();
@@ -32,10 +34,13 @@ function Home() {
             setTrips(tripsApi);
         }
 
-        Trips();
-    }, [])
+        if(currentUser)
+            Trips();
+        else navigate('/');
+    }, [currentUser, navigate])
 
     return (
+        currentUser && 
         <div className='home-container'>
             <div className='title'> 
                 <h1>Welcome to DrivePlus</h1>

@@ -40,21 +40,21 @@ function TripModalView({show, setShow, trip}) {
                         </div>
                         <div style={{borderBottom: "0"}} className='profit-details-element'>
                             <h6>Profit</h6>
-                            <h7>lasha</h7>
+                            <h7>${Number(trip.profit).toFixed(2)}</h7>
                         </div>
                     </div>
                     <div className='profit-details-column' style={{borderRight: "0"}}>
                         <div className='profit-details-element'>
                             <h6>Price / Mile</h6>
-                            <h7>${Math.ceil(trip.amount / trip.mileage)}</h7>
+                            <h7>${Number(trip.amount / trip.mileage).toFixed(2)}</h7>
                         </div>
                         <div className='profit-details-element'>
                             <h6>Fuel / Mile</h6>
-                            <h7>${Math.ceil(trip.fuelprice / trip.mileage)}</h7>
+                            <h7>${Number((trip.amount - trip.profit) / trip.mileage).toFixed(2)}</h7>
                         </div>
                         <div style={{borderBottom: "0"}} className='profit-details-element'>
                             <h6>Profit / Mile</h6>
-                            <h7>lasha</h7>
+                            <h7>${Number(trip.profit / trip.mileage).toFixed(2)}</h7>
                         </div>
                     </div>
                 </div>

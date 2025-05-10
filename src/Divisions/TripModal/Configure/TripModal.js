@@ -8,6 +8,7 @@ import GetVehicles from '../../../API/GetVehicles';
 import GetStates from '../../../API/GetStates';
 import AddTripApi from '../../../API/AddTrip';
 import EditTripApi from '../../../API/EditTrip';
+import CalculateProfitApi from '../../../API/CalculateProfit';
 
 function TripModalConfigure({show, setShow, trip, setTrips}) {
     const [states, setStates] = useState([{
@@ -39,7 +40,7 @@ function TripModalConfigure({show, setShow, trip, setTrips}) {
         if (show) {
             fetchData();
         }
-    }, [trip]);
+    }, [trip, show]);
 
     return (
         vehicles !== null && states !== null &&
@@ -65,6 +66,8 @@ function AddTrip({show, setShow, vehicles, states, setTrips}) {
         fuelprice: 0
     });
 
+    const [profit, setProfit] = useState(null);
+
     async function handleSubmit() {
         if(tripToAdd.date.trim() === '' ||
         tripToAdd.pickupStateId === null || tripToAdd.pickupStateId <= 0 ||
@@ -81,6 +84,26 @@ function AddTrip({show, setShow, vehicles, states, setTrips}) {
         setTrips(prev => [...prev, resp]);
 
         setShow(false);
+    }
+
+    async function CalculateProfit() {
+        var model = {
+            vehicle_id: tripToAdd.vehicleId,
+            mileage: tripToAdd.mileage,
+            amount: tripToAdd.amount,
+            fuel_cost: tripToAdd.fuelprice
+        }
+
+        if(model.vehicle_id <= 0 || model.vehicle_id == null ||
+            model.mileage <= 0 || model.mileage == null ||
+            model.amount <= 0 || model.amount == null ||
+            model.fuel_cost <= 0 || model.fuel_cost == null
+        )
+            return;
+        
+        const resp = await CalculateProfitApi(model)
+
+        setProfit(resp.profit);
     }
 
     return (
@@ -141,9 +164,11 @@ function AddTrip({show, setShow, vehicles, states, setTrips}) {
             type="number" id="trip-amount" class="form-control" placeholder="Amount" />
             <span class="input-group-text">.00</span>
         </div>
+
+        {profit && <p>Estimated Profit: ${Number(profit).toFixed(2)}</p>}
         </Modal.Body>
         <Modal.Footer>
-            <Button variant="success">
+            <Button variant="success" onClick={() => CalculateProfit()}>
             Calculate Profit
           </Button>
           <Button variant="primary" onClick={() => handleSubmit()}>
@@ -178,8 +203,29 @@ function EditTrip({show, setShow, trip, vehicles, states, setTrips}) {
         vehicleId: 0,
         mileage: 0,
         fuelprice: 0,
-        amount: 0
+        amount: 0,
+        profit: 0
     })
+
+    async function RecalculateProfit() {
+        var model = {
+            vehicle_id: selectedVehicle.value,
+            mileage: tripToEdit.mileage,
+            amount: tripToEdit.amount,
+            fuel_cost: tripToEdit.fuelprice
+        }
+
+        if(model.vehicle_id <= 0 || model.vehicle_id == null ||
+            model.mileage <= 0 || model.mileage == null ||
+            model.amount <= 0 || model.amount == null ||
+            model.fuel_cost <= 0 || model.fuel_cost == null
+        )
+            return;
+        
+        const resp = await CalculateProfitApi(model)
+
+        setTripToEdit(x => ({...x, profit: resp.profit}));
+    }
 
     useEffect(() => {
         setTripToEdit(x => ({
@@ -189,7 +235,8 @@ function EditTrip({show, setShow, trip, vehicles, states, setTrips}) {
             vehicleId: trip.vehicleId,
             mileage: trip.mileage,
             fuelprice: trip.fuelprice,
-            amount: trip.amount 
+            amount: trip.amount,
+            profit: trip.profit
         }))
 
         setSelectedPickup(x => ({
@@ -325,9 +372,10 @@ function EditTrip({show, setShow, trip, vehicles, states, setTrips}) {
             class="form-control" placeholder="Amount" />
             <span class="input-group-text">.00</span>
         </div>
+        {tripToEdit.profit && <p>Estimated Profit: ${Number(tripToEdit.profit).toFixed(2)}</p>}
         </Modal.Body>
         <Modal.Footer>
-            <Button variant="success">
+            <Button variant="success" onClick={() => RecalculateProfit()}>
             Recalculate Profit
           </Button>
           <Button variant="primary" onClick={() => handleEdit()}>
